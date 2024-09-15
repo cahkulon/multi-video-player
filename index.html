@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi Video Player</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Pusatkan secara horizontal */
+            justify-content: flex-start; /* Tidak pusat secara vertikal */
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            margin: 0;
+        }
+        .control-buttons {
+            margin: 20px;
+            text-align: center;
+        }
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center; /* Pusatkan secara horizontal */
+            align-items: flex-start; /* Mulai dari atas, tidak pusat secara vertikal */
+            gap: 20px;
+        }
+        .upload-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        video {
+            width: 100%;
+            max-width: 300px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+        select {
+            padding: 5px;
+        }
+        .center-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        /* Square mode grid layout */
+        .video-container.square {
+            display: grid;
+            grid-gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 id="headerTitle">PLAY MULTIPLE VIDEOS</h1>
+    </header>
+
+    <!-- Control Buttons -->
+    <div class="control-buttons">
+        <div class="center-content">
+            <p id="videoCount">Current Video Players: 1</p>
+            <button id="removeVideoBtn">-</button>
+            <button id="addVideoBtn">+</button>
+        </div>
+        <div class="center-content">
+            <p>Current Mode:</p>
+            <select id="layoutMode">
+                <option value="square" selected>Square</option>
+                <option value="vertical">Vertical</option>
+                <option value="horizontal">Horizontal</option>
+            </select>
+        </div>
+        <div class="center-content">
+            <p>Current sound:</p>
+            <button id="toggleSoundBtn">Active</button>
+        </div>
+    </div>
+
+    <!-- Video Container -->
+    <div id="videoContainer" class="video-container square">
+        <div class="upload-container">
+            <button id="uploadVideo1Btn">Upload Video 1</button>
+            <input type="file" id="videoUpload1" accept="video/*" style="display: none;">
+            <video id="videoPlayer1" controls loop>
+                Your browser does not support the video tag.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        let videoCount = 1;
+        const maxVideos = 4;
+        let isSoundActive = true; // Track if sound is active or muted
+
+        // Function to handle file selection and playback
+        function handleFileSelect(buttonId, inputId, playerId) {
+            const button = document.getElementById(buttonId);
+            const input = document.getElementById(inputId);
+            const player = document.getElementById(playerId);
+
+            button.addEventListener('click', function() {
+                input.click(); // Trigger the hidden file input
+            });
+
+            input.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('video/')) {
+                    const url = URL.createObjectURL(file);
+                    player.src = url;
+                    player.load();
+                    player.play();
+                } else {
+                    alert("Please select a valid video file.");
+                }
+            });
+        }
+
+        // Function to update video player count display
+        function updateVideoCount() {
+            document.getElementById('videoCount').textContent = `Current Video Players: ${videoCount}`;
+        }
+
+        // Add video player
+        document.getElementById('addVideoBtn').addEventListener('click', function() {
+            if (videoCount < maxVideos) {
+                videoCount++;
+                const newVideo = document.createElement('div');
+                newVideo.classList.add('upload-container');
+                newVideo.innerHTML = `
+                    <button id="uploadVideo${videoCount}Btn">Upload Video ${videoCount}</button>
+                    <input type="file" id="videoUpload${videoCount}" accept="video/*" style="display: none;">
+                    <video id="videoPlayer${videoCount}" controls loop>
+                        Your browser does not support the video tag.
+                    </video>
+                `;
+                document.getElementById('videoContainer').appendChild(newVideo);
+                handleFileSelect(`uploadVideo${videoCount}Btn`, `videoUpload${videoCount}`, `videoPlayer${videoCount}`);
+                updateVideoCount();
+                updateLayout();
+            }
+        });
+
+        // Remove video player
+        document.getElementById('removeVideoBtn').addEventListener('click', function() {
+            if (videoCount > 1) {
+                document.getElementById('videoContainer').lastChild.remove();
+                videoCount--;
+                updateVideoCount();
+                updateLayout();
+            }
+        });
+
+        // Setup file input handler for the first video player
+        handleFileSelect('uploadVideo1Btn', 'videoUpload1', 'videoPlayer1');
+
+        // Update layout based on mode
+        function updateLayout() {
+            const mode = document.getElementById('layoutMode').value;
+            const videoContainer = document.getElementById('videoContainer');
+
+            if (mode === 'vertical') {
+                videoContainer.style.flexDirection = 'column';
+                videoContainer.style.alignItems = 'flex-start'; // No vertical centering
+                videoContainer.style.justifyContent = 'flex-start'; // No vertical centering
+                videoContainer.classList.remove('square');
+                videoContainer.style.display = 'flex'; // Ensure Flexbox layout
+            } else if (mode === 'horizontal') {
+                videoContainer.style.flexDirection = 'row';
+                videoContainer.style.flexWrap = 'nowrap';
+                videoContainer.style.justifyContent = 'center'; // Center videos horizontally
+                videoContainer.style.alignItems = 'flex-start'; // No vertical centering
+                videoContainer.classList.remove('square');
+                videoContainer.style.display = 'flex'; // Ensure Flexbox layout
+            } else if (mode === 'square') {
+                videoContainer.style.display = 'grid'; // Ensure Grid layout
+                videoContainer.classList.add('square');
+                
+                if (videoCount === 1) {
+                    videoContainer.style.gridTemplateColumns = '1fr';
+                    videoContainer.style.gridTemplateRows = '1fr';
+                } else if (videoCount === 2) {
+                    videoContainer.style.gridTemplateColumns = '1fr 1fr';
+                    videoContainer.style.gridTemplateRows = '1fr';
+                } else if (videoCount === 3) {
+                    videoContainer.style.gridTemplateColumns = '1fr 1fr';
+                    videoContainer.style.gridTemplateRows = '1fr 1fr'; // Make the third video large
+                    document.getElementById('videoPlayer3').style.gridColumn = '1 / span 2';
+                } else if (videoCount === 4) {
+                    videoContainer.style.gridTemplateColumns = '1fr 1fr';
+                    videoContainer.style.gridTemplateRows = '1fr 1fr';
+                }
+            }
+        }
+
+        // Change layout mode
+        document.getElementById('layoutMode').addEventListener('change', function(event) {
+            updateLayout();
+        });
+
+        // Toggle sound (mute/unmute)
+        document.getElementById('toggleSoundBtn').addEventListener('click', function() {
+            const videos = document.querySelectorAll('video');
+            isSoundActive = !isSoundActive;
+
+            videos.forEach(video => {
+                video.muted = !isSoundActive;
+            });
+
+            const soundBtn = document.getElementById('toggleSoundBtn');
+            soundBtn.textContent = isSoundActive ? 'Active' : 'Silence';
+        });
+
+        // Initial layout update
+        updateLayout();
+    </script>
+</body>
+</html>
